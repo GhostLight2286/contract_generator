@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Генератор юридических документов</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+
+        /* Стили для шапки пользователя */
+        .user-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; background: #e9ecef; padding: 15px 20px; border-radius: 6px; border-left: 5px solid #0056b3; }
+        .user-header h3 { margin: 0; color: #333; font-size: 18px; }
+        .btn-logout { padding: 8px 15px; background: #dc3545; color: white; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 14px; transition: background 0.3s; }
+        .btn-logout:hover { background: #c82333; }
+
+        h1 { text-align: center; color: #333; margin-bottom: 30px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; color: #555; font-size: 14px; }
+        input[type="text"], input[type="date"], input[type="number"], select, textarea {
+            width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 14px; font-family: inherit;
+        }
+        textarea { resize: vertical; height: 80px; }
+        .btn-submit { width: 100%; padding: 15px; background-color: #28a745; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; margin-top: 20px; font-weight: bold; transition: background 0.3s; }
+        .btn-submit:hover { background-color: #218838; }
+        .hidden { display: none; }
+        .section-title { margin-top: 30px; margin-bottom: 15px; border-bottom: 2px solid #eee; padding-bottom: 5px; color: #0056b3; font-weight: bold; font-size: 16px; }
+
+        /* Стили для flash-сообщений */
+        .alert { padding: 10px; margin-bottom: 15px; border-radius: 4px; font-size: 14px; }
+        .alert-success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .alert-danger { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    </style>
+</head>
+<body>
+    <div class="container">
+
+        <!-- Шапка с информацией о пользователе -->
+        <div class="user-header">
+            <h3>Кабинет клиента: <strong>{{ current_user.username }}</strong></h3>
+            <a href="{{ url_for('logout') }}" class="btn-logout">Выйти</a>
+        </div>
+
+        <!-- Блок для вывода системных сообщений (например, об ошибках) -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <h1>Генератор договоров</h1>
+
+        <form action="/generate" method="POST">
+
+            <div class="form-group">
+                <label for="contract_type">Выберите тип договора:</label>
+                <select name="contract_type" id="contract_type" onchange="updateForm()">
+                    <option value="rent">Договор аренды</option>
+                    <option value="work">Договор подряда</option>
+                    <option value="gift">Договор дарения</option>
+                </select>
+            </div>
+
+            <div class="section-title">Общие данные документа</div>
+            <div class="form-group">
+                <label>Номер договора:</label>
+                <input type="text" name="contract_number" placeholder="Например: 15-А" required>
+            </div>
+            <div class="form-group">
+                <label>Город составления:</label>
+                <input type="text" name="city" placeholder="Например: г. Минск" required>
+            </div>
+            <div class="form-group">
+                <label>Дата составления:</label>
+                <input type="date" name="date" required>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- ПОЛЯ ДЛЯ АРЕНДЫ                            -->
+            <!-- ========================================== -->
+            <div id="fields-rent" class="contract-fields">
+                <div class="section-title">Стороны и предмет (Аренда)</div>
+                <div class="form-group"><label>ФИО Арендодателя:</label><input type="text" name="landlord_name" placeholder="Иванов Иван Иванович"></div>
+                <div class="form-group"><label>Паспорт Арендодателя:</label><input type="text" name="landlord_passport" placeholder="Серия, номер"></div>
+                <div class="form-group"><label>Адрес Арендодателя:</label><input type="text" name="landlord_address" placeholder="Город, улица, дом, кв."></div>
+                <div class="form-group"><label>ФИО Арендатора:</label><input type="text" name="tenant_name" placeholder="Петров Петр Петрович"></div>
+                <div class="form-group"><label>Паспорт Арендатора:</label><input type="text" name="tenant_passport" placeholder="Серия, номер"></div>
+                <div class="form-group"><label>Адрес Арендатора:</label><input type="text" name="tenant_address" placeholder="Город, улица, дом, кв."></div>
+                <div class="form-group"><label>Описание имущества (что сдается):</label><textarea name="property_description" placeholder="Например: Квартира, общей площадью 45 кв.м., расположенная по адресу..."></textarea></div>
+                <div class="form-group"><label>Арендная плата (BYN):</label><input type="number" name="rent_amount" placeholder="500"></div>
+                <div class="form-group"><label>Обеспечительный платеж (BYN):</label><input type="number" name="deposit_amount" placeholder="500"></div>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- ПОЛЯ ДЛЯ ПОДРЯДА                           -->
+            <!-- ========================================== -->
+            <div id="fields-work" class="contract-fields hidden">
+                <div class="section-title">Стороны и предмет (Подряд)</div>
+                <div class="form-group"><label>ФИО Заказчика:</label><input type="text" name="customer_name" placeholder="Сидоров Сидор Сидорович"></div>
+                <div class="form-group"><label>Паспорт Заказчика:</label><input type="text" name="customer_passport" placeholder="Серия, номер"></div>
+                <div class="form-group"><label>ФИО / Название Подрядчика:</label><input type="text" name="contractor_name" placeholder="ООО 'СтройМастер' или ФИО ИП"></div>
+                <div class="form-group"><label>Паспорт / УНП Подрядчика:</label><input type="text" name="contractor_passport" placeholder="Серия, номер или УНП"></div>
+                <div class="form-group"><label>Описание работ:</label><textarea name="work_description" placeholder="Например: Ремонт санузла под ключ"></textarea></div>
+                <div class="form-group"><label>Срок сдачи работ:</label><input type="date" name="deadline"></div>
+                <div class="form-group"><label>Стоимость работ (BYN):</label><input type="number" name="total_cost" placeholder="1000"></div>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- ПОЛЯ ДЛЯ ДАРЕНИЯ                           -->
+            <!-- ========================================== -->
+            <div id="fields-gift" class="contract-fields hidden">
+                <div class="section-title">Стороны и предмет (Дарение)</div>
+                <div class="form-group"><label>ФИО Дарителя:</label><input type="text" name="donor_name" placeholder="Кузнецов Алексей Владимирович"></div>
+                <div class="form-group"><label>Паспорт Дарителя:</label><input type="text" name="donor_passport" placeholder="Серия, номер"></div>
+                <div class="form-group"><label>ФИО Одаряемого:</label><input type="text" name="donee_name" placeholder="Смирнова Анна Игоревна"></div>
+                <div class="form-group"><label>Паспорт Одаряемого:</label><input type="text" name="donee_passport" placeholder="Серия, номер"></div>
+                <div class="form-group"><label>Что дарится (описание имущества):</label><textarea name="gift_description" placeholder="Например: Автомобиль Lada Vesta, VIN: ..."></textarea></div>
+                <div class="form-group"><label>Оценка стоимости (BYN):</label><input type="number" name="gift_value" placeholder="8000"></div>
+            </div>
+
+            <button type="submit" class="btn-submit">Сгенерировать PDF-документ</button>
+        </form>
+    </div>
+
+    <!-- Скрипт для переключения видимости полей -->
+    <script>
+        function updateForm() {
+            // Скрываем все блоки с полями
+            document.querySelectorAll('.contract-fields').forEach(el => el.classList.add('hidden'));
+
+            // Получаем выбранный тип договора
+            const type = document.getElementById('contract_type').value;
+
+            // Показываем нужный блок
+            document.getElementById('fields-' + type).classList.remove('hidden');
+        }
+
+        // Вызываем функцию при загрузке страницы, чтобы сразу показать поля аренды
+        window.onload = updateForm;
+    </script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Панель нотариуса</title>
+    <style>body { font-family: Arial; padding: 20px; background: #f4f7f6; } .header { display: flex; justify-content: space-between; align-items: center; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); } .btn { padding: 8px 15px; background: #dc3545; color: white; text-decoration: none; border-radius: 4px; }</style>
+</head>
+<body>
+    <div class="header">
+        <h2>Личный кабинет Нотариуса: {{ current_user.username }}</h2>
+        <a href="{{ url_for('logout') }}" class="btn">Выйти</a>
+    </div>
+    <div style="margin-top: 20px; background: white; padding: 20px; border-radius: 8px;">
+        <h3>Документы на проверку</h3>
+        <p>Здесь будет отображаться список договоров, которые сгенерировали клиенты. (Для реализации этого списка нужно будет сохранять данные о генерации в базу данных).</p>
+    </div>
+</body>
+</html>
