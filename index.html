@@ -30,6 +30,19 @@
         .alert { padding: 10px; margin-bottom: 15px; border-radius: 4px; font-size: 14px; }
         .alert-success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
         .alert-danger { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+
+        /* Стили для списка договоров клиента */
+        .contracts-list { margin-top: 40px; }
+        .contract-card { background: #fff; border: 1px solid #dee2e6; border-left: 5px solid #ccc; border-radius: 6px; padding: 15px 20px; margin-bottom: 12px; }
+        .contract-card.pending { border-left-color: #ffc107; }
+        .contract-card.approved { border-left-color: #28a745; }
+        .contract-card.rejected { border-left-color: #dc3545; }
+        .contract-card.draft { border-left-color: #6c757d; }
+        .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; color: #fff; }
+        .badge-draft { background: #6c757d; } .badge-pending { background: #b8860b; } .badge-approved { background: #28a745; } .badge-rejected { background: #dc3545; }
+        .btn { display: inline-block; padding: 8px 14px; border-radius: 4px; text-decoration: none; font-size: 13px; font-weight: bold; color: white; border: none; cursor: pointer; margin-right: 6px; }
+        .btn-blue { background: #0056b3; } .btn-green { background: #28a745; } .btn-red { background: #dc3545; } .btn-gray { background: #6c757d; }
+        .comment-box { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; padding: 10px; border-radius: 4px; margin-top: 8px; font-size: 14px; }
     </style>
 </head>
 <body>
@@ -120,8 +133,48 @@
                 <div class="form-group"><label>Оценка стоимости (BYN):</label><input type="number" name="gift_value" placeholder="8000"></div>
             </div>
 
-            <button type="submit" class="btn-submit">Сгенерировать PDF-документ</button>
+            <div style="display:flex; gap:10px;">
+                <button type="submit" name="action" value="save" class="btn-submit" style="background-color:#6c757d;">Сгенерировать и скачать (черновик)</button>
+                <button type="submit" name="action" value="send" class="btn-submit" style="background-color:#0056b3;">Сгенерировать и отправить нотариусу</button>
+            </div>
         </form>
+
+        <div class="contracts-list">
+            <h1>Мои договоры</h1>
+            {% if contracts %}
+              {% for c in contracts %}
+              <div class="contract-card {{ c.status }}">
+                <strong>{{ type_names.get(c.contract_type, c.contract_type) }} №{{ c.contract_number }}</strong>
+                <span class="badge badge-{{ c.status }}">{{ status_names.get(c.status, c.status) }}</span>
+                <div style="color:#777; font-size:12px; margin-top:3px;">Создан: {{ c.created_at.strftime('%d.%m.%Y %H:%M') }}</div>
+
+                {% if c.status == 'rejected' %}
+                  <div class="comment-box"><b>Замечания нотариуса (нужно переделать):</b> {{ c.comment }}</div>
+                  <p style="font-size:13px; color:#555; margin:8px 0 4px;">Исправьте данные в форме выше и отправьте документ нотариусу повторно:</p>
+                {% endif %}
+
+                <div style="margin-top:10px;">
+                  {% if c.status == 'draft' %}
+                    <form action="{{ url_for('generate') }}" method="POST" style="display:inline;">
+                      {% for key, value in c.form_data.items() %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endfor %}
+                      <input type="hidden" name="action" value="send">
+                      <button type="submit" class="btn btn-blue">Отправить нотариусу</button>
+                    </form>
+                  {% elif c.status == 'pending' %}
+                    <a href="{{ url_for('download_contract', contract_id=c.id) }}" class="btn btn-gray">Скачать черновик</a>
+                    <span style="font-size:13px; color:#856404;">Ожидает проверки нотариусом…</span>
+                  {% elif c.status == 'approved' %}
+                    <a href="{{ url_for('download_contract', contract_id=c.id) }}" class="btn btn-green">Скачать заверенный договор (подпись и печать)</a>
+                  {% elif c.status == 'rejected' %}
+                    <a href="#" class="btn btn-blue" onclick="prefillForm('{{ c.id }}', '{{ c.contract_type }}', {{ c.form_data | tojson }}); return false;">Отредактировать и отправить заново</a>
+                  {% endif %}
+                </div>
+              </div>
+              {% endfor %}
+            {% else %}
+              <p style="color:#777;">У вас пока нет сгенерированных договоров. Заполните форму выше.</p>
+            {% endif %}
+        </div>
     </div>
 
     <!-- Скрипт для переключения видимости полей -->
@@ -139,6 +192,19 @@
 
         // Вызываем функцию при загрузке страницы, чтобы сразу показать поля аренды
         window.onload = updateForm;
+
+        // Подстановка сохранённых данных договора в форму для редактирования после отклонения
+        function prefillForm(contractId, type, data) {
+            const form = document.querySelector('form[action="/generate"]');
+            form.action = '/contract/' + contractId + '/resend';
+            document.getElementById('contract_type').value = type;
+            updateForm();
+            for (const key in data) {
+                const el = form.querySelector('[name="' + key + '"]');
+                if (el) el.value = data[key];
+            }
+            form.scrollIntoView({behavior: 'smooth'});
+        }
     </script>
 </body>
 </html>
